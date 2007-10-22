@@ -54,7 +54,9 @@ import Test.QuickCheck
 #endif
 data BKTree a = Node a (M.IntMap (BKTree a))
               | Empty
-                deriving Show -- debugging
+#ifdef DEBUG
+                deriving Show
+#endif
 
 -- | A type is 'Metric' if is has a function 'distance' which has the following
 -- properties:
