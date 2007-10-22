@@ -49,9 +49,9 @@ module Data.Set.BKTree
 import qualified Data.IntMap as M
 import qualified Data.List as L hiding (null)
 import Prelude hiding (null)
-
+#ifdef DEBUG
 import Test.QuickCheck
-
+#endif
 data BKTree a = Node a (M.IntMap (BKTree a))
               | Empty
                 deriving Show -- debugging
@@ -219,6 +219,7 @@ closeLoop a candidate@(b,d) (Node x imap)
 
 on rel f x y = rel (f x) (f y)
 
+#ifdef DEBUG
 -- Testing
 
 prop_empty n = not (member (n::Int) empty)
@@ -260,3 +261,5 @@ prop_closest n xs =
     (Nothing,[]) -> True
     (Just (_,d),ys) -> d == minimum (map (distance n) (ys::[Int]))
     _ -> False
+
+#endif 
