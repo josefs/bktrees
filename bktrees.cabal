@@ -7,5 +7,6 @@ maintainer:	josef.svenningsson@gmail.com
 synopsis:	A set data structure with approximate searching
 build-depends:	base, containers
 exposed-modules:	Data.Set.BKTree
+extra-source-files: 	test/Test.hs
 extensions:	CPP
 ghc-options:	-O
