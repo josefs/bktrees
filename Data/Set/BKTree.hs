@@ -17,15 +17,15 @@
    Useful metrics include the manhattan distance between two points,
    the Levenshtein edit distance between two strings, the number of
    edges in the shortest path between two nodes in a undirected graph
-   and the Hamming distance between two binary strings. Any euclidian
+   and the Hamming distance between two binary strings. Any euclidean
    space also has a metric. However, in this module we use int-valued
-   metrics and that doesn't quite with the metrics of euclidian spaces
+   metrics and that doesn't quite with the metrics of euclidean spaces
    which are real-values.
 
    The worst case complexity of many of these operations is quite bad,
-   but the expected behaviour varies greatly with the metric. For
+   but the expected behavior varies greatly with the metric. For
    example, the discrete metric (@distance x y | y == x = 0 |
-   otherwise = 1@) makes BK-trees behave abysmally. The metric
+   otherwise = 1@) makes BK-trees behave abysmally. The metrics
    mentioned above should give good performance characteristics.
 
 -}
@@ -131,7 +131,7 @@ memberDistance n a (Node b map)
                          case M.split (d+n+1) mapRight of
                           (mapCenter,_) -> mapCenter
 
--- | Removes an element from the tree. If an element occurrs several times in 
+-- | Removes an element from the tree. If an element occurs several times in 
 --   the only the first occurrence will be deleted.
 delete :: Metric a => a -> BKTree a -> BKTree a
 delete a Empty = Empty
