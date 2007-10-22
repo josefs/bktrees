@@ -1,0 +1,15 @@
+This is a module I hacked together quickly after having read the following
+blog post:
+http://blog.notdot.net/archives/30-Damn-Cool-Algorithms,-Part-1-BK-Trees.html
+
+I thought the data structure sounded cool so I thought it would be an 
+interesting excerise to implement it. 
+
+BK-trees can apparently perform very good in some circumstances. The 
+paper "Fast Approximate String Matching in a Dictionary" (Baeza-Yates, 
+Navarro 1998) recommends them over other structures for doing 
+approximate search.
+http://citeseer.ist.psu.edu/1593.html
+
+The original paper can be found here:
+http://portal.acm.org/citation.cfm?id=362003.362025
