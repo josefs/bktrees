@@ -103,7 +103,7 @@ empty = Empty
 insert :: Metric a => a -> BKTree a -> BKTree a
 insert a Empty = Node a M.empty
 insert a (Node b map) = Node b map'
-  where map' = M.insertWith recurse d Empty map
+  where map' = M.insertWith recurse d (Node a M.empty) map
         d    = distance a b
         recurse _ tree = insert a tree
 
@@ -219,7 +219,8 @@ on rel f x y = rel (f x) (f y)
 
 prop_empty n = not (member (n::Int) empty)
 
-prop_insert n xs = error "Unimplemented"
+prop_insert n xs = 
+  L.sort (elems (insert n (fromList xs))) == L.sort (n:xs)
 
 prop_member n xs = member n (fromList xs) == L.elem (n::Int) xs
 
