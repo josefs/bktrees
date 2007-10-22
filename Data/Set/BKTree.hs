@@ -89,19 +89,12 @@ instance Metric Integer where
 instance Metric Char where
   distance i j = abs (fromEnum i - fromEnum j)
 
-{-
--- | A type of pair whose 'Metric' instance gives the manhattan distance
---   between to two pairs.
-data Manhattan a b = Manhattan a b deriving Eq
-
-instance (Metric a, Metric b) => Metric (Manhattan a b) where
-  distance (Manhattan a b) (Manhattan c d) = distance a c + distance b d
--}
-
+-- | Test if the tree is empty.
 null :: BKTree a -> Bool
 null (Empty)    = True
 null (Node _ _) = False
 
+-- | The empty tree.
 empty :: BKTree a
 empty = Empty
 
