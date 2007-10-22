@@ -37,20 +37,25 @@ module Data.Set.BKTree
 --    ,Manhattan(..)
      --
     ,null,empty
-    ,fromList
+    ,fromList,singleton
     ,insert
     ,member,memberDistance
     ,delete
     ,union,unions
     ,elems,elemsDistance
     ,closest
+#ifdef DEBUG
+    ,runTests
+#endif
     )where
 
 import qualified Data.IntMap as M
 import qualified Data.List as L hiding (null)
 import Prelude hiding (null)
 #ifdef DEBUG
+import qualified Prelude
 import Test.QuickCheck
+import Text.Printf
 #endif
 data BKTree a = Node a (M.IntMap (BKTree a))
               | Empty
@@ -97,6 +102,10 @@ null (Node _ _) = False
 -- | The empty tree.
 empty :: BKTree a
 empty = Empty
+
+-- | The tree with a single element
+singleton :: a -> BKTree a
+singleton a = Node a M.empty
 
 -- | Inserts an element into the tree. If an element is inserted several times
 --   it will be stored several times.
@@ -217,10 +226,22 @@ on rel f x y = rel (f x) (f y)
 #ifdef DEBUG
 -- Testing
 
+-- Semantics of BKTrees. Just a boring list of integers
+sem tree = L.sort (elems tree)
+
+-- For testing functions that transform trees
+trans f xs = sem (f (fromList xs))
+
+-- Tests for individual functions
+
 prop_empty n = not (member (n::Int) empty)
 
+prop_null xs = null (fromList xs) == Prelude.null (xs :: [Int])
+
+prop_singleton n = elems (fromList [n]) == [n :: Int]
+
 prop_insert n xs = 
-  L.sort (elems (insert n (fromList xs))) == L.sort (n:xs)
+    trans (insert (n::Int)) xs == L.sort (n:xs)
 
 prop_member n xs = member n (fromList xs) == L.elem (n::Int) xs
 
@@ -232,7 +253,7 @@ prop_memberDistance dist n xs =
  L.any (\e -> distance n e <= d) (xs :: [Int])
 
 prop_delete n xs =
-  L.sort (elems (delete n (fromList xs))) == 
+  trans (delete n) xs  == 
   L.sort (removeFirst (xs :: [Int]))
  where removeFirst [] = []
        removeFirst (a:as) | a == n    = as
@@ -240,16 +261,17 @@ prop_delete n xs =
 
 prop_elems xs = L.sort (elems (fromList xs)) == L.sort (xs::[Int])
 
-prop_elemsDistance d n xs = 
+prop_elemsDistance dist n xs = 
+  let d = dist `mod` 5 in
   L.sort (elemsDistance d n (fromList xs)) == 
-  L.sort (filter (\e -> distance n e <= d) xs)
+  L.sort (filter (\e -> distance n e <= d) (xs::[Int]))
 
 prop_unions xss = 
-    L.sort (elems (unions (map fromList xss))) == 
+    sem (unions (map fromList xss)) == 
     L.sort (concat (xss::[[Int]]))
 
 prop_union xs ys =
-    L.sort (elems (union (fromList xs) (fromList ys))) ==
+    sem (union (fromList xs) (fromList ys)) ==
     L.sort (xs ++ (ys::[Int]))
 
 prop_closest n xs =
@@ -257,5 +279,29 @@ prop_closest n xs =
     (Nothing,[]) -> True
     (Just (_,d),ys) -> d == minimum (map (distance n) (ys::[Int]))
     _ -> False
+
+-- Testing the relations between operations
+
+prop_insertDelete n xs =
+  trans (delete n . insert n) xs == L.sort (xs::[Int])
+
+-- All the tests
+
+tests = [("empty",          quickCheck prop_empty)
+        ,("null",           quickCheck prop_null)
+        ,("singleton",      quickCheck prop_singleton)
+        ,("insert",         quickCheck prop_insert)
+        ,("member",         quickCheck prop_member)
+        ,("memberDistance", quickCheck prop_memberDistance)
+        ,("delete",         quickCheck prop_delete)
+        ,("elems",          quickCheck prop_elems)
+        ,("elemsDistance",  quickCheck prop_elemsDistance)
+        ,("unions",         quickCheck prop_unions)
+        ,("union",          quickCheck prop_union)
+        ,("closest",        quickCheck prop_closest)
+        ,("insert/delete",  quickCheck prop_insertDelete)
+        ]
+
+runTests = mapM_ (\ (s,a) -> printf "%-25s :" s >> a) tests
 
 #endif 
