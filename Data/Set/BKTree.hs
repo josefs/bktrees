@@ -1,6 +1,7 @@
 {- | 
    Module      : Data.Set.BKTree
    Copyright   : (c) Josef Svenningsson 2007
+                 (c) Henning Günter     2007
    License     : BSD-style
    Maintainer  : josef.svenningsson@gmail.com
    Stability   : Alpha quality. Interface may change without notice.
@@ -52,15 +53,15 @@ module Data.Set.BKTree
 import qualified Data.IntMap as M
 import qualified Data.List as L hiding (null)
 import Prelude hiding (null)
+
+import Data.Array.IArray (Array,array,listArray,(!),assocs)
+import Data.Array.Unboxed (UArray)
+
 #ifdef DEBUG
 import qualified Prelude
 import Test.QuickCheck
 import Text.Printf
-#endif
-data BKTree a = Node a (M.IntMap (BKTree a))
-              | Empty
-#ifdef DEBUG
-                deriving Show
+import System.Exit
 #endif
 
 -- | A type is 'Metric' if is has a function 'distance' which has the following
@@ -93,6 +94,45 @@ instance Metric Integer where
 
 instance Metric Char where
   distance i j = abs (fromEnum i - fromEnum j)
+
+hirschberg :: Eq a => [a] -> [a] -> Int
+hirschberg xs [] = length xs
+hirschberg xs ys = let
+	lxs = length xs
+	lys = length ys
+	start_arr :: UArray Int Int
+	start_arr = listArray (1,lys) [1..lys]
+	in (L.foldl' (\arr (i,xi) -> let
+		narr :: UArray Int Int
+		narr = array (1,lys) (snd $ L.mapAccumL
+			(\(s,c) ((j,el),yj) -> let
+				nc = minimum
+					[s  + (if xi==yj then 0 else 1)
+					,el + 1
+					,c  + 1
+					]
+				in ((el,nc),(j,nc)))
+			(i-1,i)
+			(zip (assocs arr) ys)
+			)
+		in narr
+		) start_arr (zip [1..] xs))!lys
+
+
+instance Eq a => Metric [a] where
+  distance = hirschberg
+
+-- --------
+-- BKTrees
+-- --------
+
+-- | The type of Burhard-Keller trees.
+data BKTree a = Node a (M.IntMap (BKTree a))
+              | Empty
+#ifdef DEBUG
+                deriving Show
+#endif
+
 
 -- | Test if the tree is empty.
 null :: BKTree a -> Bool
@@ -225,6 +265,42 @@ on rel f x y = rel (f x) (f y)
 
 #ifdef DEBUG
 -- Testing
+-- N.B. This code requires QuickCheck 2.0
+
+
+-- We use a more standard implementation of the levenshtein edit distance
+-- to check the hirschberg algorithm
+levenshtein :: Eq a => [a] -> [a] -> Int
+levenshtein xs ys = let
+	lxs = length xs
+	lys = length ys
+	d x y cx cy = minimum
+		[dist!(x-1,y-1) + (if cx == cy then 0 else 1)
+		,dist!(x-1,y)   + 1
+		,dist!(x,y-1)   + 1
+		]
+	dist :: Array (Int,Int) Int
+	dist = array ((0,0),(lxs,lys))
+		(  [((0,0),0)]
+		++ [((x,0),x) | x <- [1..lxs]]
+		++ [((0,y),y) | y <- [1..lys]]
+		++ [ ((x,y),d x y cx cy)
+			| (x,cx) <- zip [1..] xs
+			, (y,cy) <- zip [1..] ys])
+	in dist!(lxs,lys)
+
+-- These properties are all rather weaker than I would like. 
+-- Think of something better.
+prop_levenshtein xs ys = distance xs ys == levenshtein xs (ys :: [Int])
+
+prop_levenshteinRepeat (NonZero (NonNegative n)) (NonZero (NonNegative m)) = 
+    distance (replicate n (0::Int)) (replicate m 0) == distance n m
+
+prop_levenshteinLength xs =
+    forAll (vectorOf (length xs) arbitrary) $ \ys -> 
+        distance xs ys == length xs && allDifferent xs ys
+    ||  distance xs ys <  length (xs :: [Int])
+    where allDifferent xs ys = all (==False) (zipWith (==) xs ys)
 
 -- Semantics of BKTrees. Just a boring list of integers
 sem tree = L.sort (elems tree)
@@ -287,21 +363,28 @@ prop_insertDelete n xs =
 
 -- All the tests
 
-tests = [("empty",          quickCheck prop_empty)
-        ,("null",           quickCheck prop_null)
-        ,("singleton",      quickCheck prop_singleton)
-        ,("insert",         quickCheck prop_insert)
-        ,("member",         quickCheck prop_member)
-        ,("memberDistance", quickCheck prop_memberDistance)
-        ,("delete",         quickCheck prop_delete)
-        ,("elems",          quickCheck prop_elems)
-        ,("elemsDistance",  quickCheck prop_elemsDistance)
-        ,("unions",         quickCheck prop_unions)
-        ,("union",          quickCheck prop_union)
-        ,("closest",        quickCheck prop_closest)
-        ,("insert/delete",  quickCheck prop_insertDelete)
+tests = [("empty",             quickCheck' prop_empty)
+        ,("null",              quickCheck' prop_null)
+        ,("singleton",         quickCheck' prop_singleton)
+        ,("insert",            quickCheck' prop_insert)
+        ,("member",            quickCheck' prop_member)
+        ,("memberDistance",    quickCheck' prop_memberDistance)
+        ,("delete",            quickCheck' prop_delete)
+        ,("elems",             quickCheck' prop_elems)
+        ,("elemsDistance",     quickCheck' prop_elemsDistance)
+        ,("unions",            quickCheck' prop_unions)
+        ,("union",             quickCheck' prop_union)
+        ,("closest",           quickCheck' prop_closest)
+        ,("insert/delete",     quickCheck' prop_insertDelete)
+        ,("levenshtein",       quickCheck' prop_levenshtein)
+        ,("levenshtein repeat",quickCheck' prop_levenshteinRepeat)
+        ,("levenshtein length",quickCheck' prop_levenshteinLength)
         ]
 
-runTests = mapM_ (\ (s,a) -> printf "%-25s :" s >> a) tests
-
+runTests = mapM_ runTest tests
+  where runTest (s,a) = do printf "%-25s :" s
+                           b <- a
+                           if b 
+                             then return ()
+                             else exitFailure
 #endif 

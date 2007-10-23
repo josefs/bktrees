@@ -13,3 +13,7 @@ http://citeseer.ist.psu.edu/1593.html
 
 The original paper can be found here:
 http://portal.acm.org/citation.cfm?id=362003.362025
+
+Henning Günter <h.guenther@tu-bs.de> generously supplied two algorithms for
+computing the levenshtein edit distance. The better one of the two is used in
+the list instance for the Metric class.
