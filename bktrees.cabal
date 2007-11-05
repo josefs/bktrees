@@ -12,7 +12,7 @@ description:
 		approximate member search, allowing you to search for 
 		elements that are of a certain distance from the element 
 		you are searching for.
-build-depends:	base, containers
+build-depends:	base, containers, array
 exposed-modules:	Data.Set.BKTree
 extra-source-files: 	test/Test.hs
 extensions:	CPP
