@@ -12,8 +12,18 @@ description:
 		approximate member search, allowing you to search for 
 		elements that are of a certain distance from the element 
 		you are searching for.
-build-depends:	base, containers, array
-exposed-modules:	Data.Set.BKTree
+cabal-version: >=1.2
 extra-source-files: 	test/Test.hs
-extensions:	CPP
-ghc-options:	-O
+
+flag splitBase
+  description: Choose the new smaller, split-up base package.
+
+library
+  if flag(splitBase)
+    build-depends: base >= 3, containers, array
+  else
+    build-depends: base < 3
+
+  exposed-modules:	Data.Set.BKTree
+  extensions:	CPP
+  ghc-options:	-O
