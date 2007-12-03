@@ -138,6 +138,11 @@ null :: BKTree a -> Bool
 null (Empty)    = True
 null (Node _ _) = False
 
+-- | Size of the tree. O(n).
+size :: BKTree a -> Int
+size (Empty) = 0
+size (Node _ map) = 1 + sum (M.elems (fmap size map))
+
 -- | The empty tree.
 empty :: BKTree a
 empty = Empty
@@ -313,6 +318,11 @@ prop_empty n = not (member (n::Int) empty)
 
 prop_null xs = null (fromList xs) == Prelude.null (xs :: [Int])
 
+prop_sizeEmpty = size empty == 0
+
+prop_sizeSucc n xs = size (insert (n::Int) tree) == size tree + 1
+  where tree = fromList xs
+
 prop_singleton n = elems (fromList [n]) == [n :: Int]
 
 prop_insert n xs = 
@@ -364,6 +374,8 @@ prop_insertDelete n xs =
 
 tests = [("empty",             quickCheck' prop_empty)
         ,("null",              quickCheck' prop_null)
+        ,("size/empty",        quickCheck' prop_sizeEmpty)
+        ,("size succ",         quickCheck' prop_sizeSucc)
         ,("singleton",         quickCheck' prop_singleton)
         ,("insert",            quickCheck' prop_insert)
         ,("member",            quickCheck' prop_member)
