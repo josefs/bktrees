@@ -35,7 +35,6 @@ module Data.Set.BKTree
      BKTree
      -- Metric
     ,Metric(..)
---    ,Manhattan(..)
      --
     ,null,empty
     ,fromList,singleton
@@ -176,12 +175,12 @@ memberDistance n a (Node b map)
     | otherwise = any (memberDistance n a) (M.elems subMap)
     where d = distance a b
           subMap = case M.split (d-n-1) map of
-                     (_,mapRight) ->                         
+                     (_,mapRight) ->
                          case M.split (d+n+1) mapRight of
                           (mapCenter,_) -> mapCenter
 
 -- | Removes an element from the tree. If an element occurs several times in 
---   the only the first occurrence will be deleted.
+--   the only one occurrence will be deleted.
 delete :: Metric a => a -> BKTree a -> BKTree a
 delete a Empty = Empty
 delete a t@(Node b map) 
