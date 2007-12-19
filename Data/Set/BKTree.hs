@@ -185,7 +185,7 @@ memberDistance n a (Node b map)
                           (mapCenter,_) -> mapCenter
 
 -- | Removes an element from the tree. If an element occurs several times in 
---   the only one occurrence will be deleted.
+--   the tree then only one occurrence will be deleted.
 delete :: Metric a => a -> BKTree a -> BKTree a
 delete a Empty = Empty
 delete a t@(Node b map) 
