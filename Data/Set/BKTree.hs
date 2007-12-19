@@ -17,11 +17,11 @@
 
    Useful metrics include the manhattan distance between two points,
    the Levenshtein edit distance between two strings, the number of
-   edges in the shortest path between two nodes in a undirected graph
+   edges in the shortest path between two nodes in an undirected graph
    and the Hamming distance between two binary strings. Any euclidean
    space also has a metric. However, in this module we use int-valued
-   metrics and that doesn't quite with the metrics of euclidean spaces
-   which are real-values.
+   metrics and that's not compatible with the metrics of euclidean 
+   spaces which are real-values.
 
    The worst case complexity of many of these operations is quite bad,
    but the expected behavior varies greatly with the metric. For
