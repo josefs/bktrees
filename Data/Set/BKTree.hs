@@ -7,7 +7,7 @@
    Stability   : Alpha quality. Interface may change without notice.
    Portability : portable
 
-   Burhard-Keller trees provide an implementation of sets which apart
+   Burkhard-Keller trees provide an implementation of sets which apart
    from the ordinary operations also has an approximate member search,
    allowing you to search for elements that are of a distance @n@ from
    the element you are searching for. The distance is determined using
@@ -125,7 +125,7 @@ instance Eq a => Metric [a] where
 -- BKTrees
 -- --------
 
--- | The type of Burhard-Keller trees.
+-- | The type of Burkhard-Keller trees.
 data BKTree a = Node a (M.IntMap (BKTree a))
               | Empty
 #ifdef DEBUG
