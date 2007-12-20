@@ -126,7 +126,7 @@ instance Eq a => Metric [a] where
 -- --------
 
 -- | The type of Burkhard-Keller trees.
-data BKTree a = Node a (M.IntMap (BKTree a))
+data BKTree a = Node a !Int (M.IntMap (BKTree a))
               | Empty
 #ifdef DEBUG
                 deriving Show
@@ -136,12 +136,12 @@ data BKTree a = Node a (M.IntMap (BKTree a))
 -- | Test if the tree is empty.
 null :: BKTree a -> Bool
 null (Empty)    = True
-null (Node _ _) = False
+null (Node _ _ _) = False
 
--- | Size of the tree. O(n).
+-- | Size of the tree.
 size :: BKTree a -> Int
 size (Empty) = 0
-size (Node _ map) = 1 + sum (M.elems (fmap size map))
+size (Node _ s _) = s
 
 -- | The empty tree.
 empty :: BKTree a
@@ -149,21 +149,21 @@ empty = Empty
 
 -- | The tree with a single element
 singleton :: a -> BKTree a
-singleton a = Node a M.empty
+singleton a = Node a 1 M.empty
 
 -- | Inserts an element into the tree. If an element is inserted several times
 --   it will be stored several times.
 insert :: Metric a => a -> BKTree a -> BKTree a
-insert a Empty = Node a M.empty
-insert a (Node b map) = Node b map'
-  where map' = M.insertWith recurse d (Node a M.empty) map
+insert a Empty = Node a 1 M.empty
+insert a (Node b size map) = Node b (size+1) map'
+  where map' = M.insertWith recurse d (Node a 1 M.empty) map
         d    = distance a b
         recurse _ tree = insert a tree
 
 -- | Checks whether an element is in the tree.
 member :: Metric a => a -> BKTree a -> Bool
 member a Empty = False
-member a (Node b map) 
+member a (Node b _ map) 
     | d == 0    = True
     | otherwise = case M.lookup d map of
                     Nothing -> False
@@ -175,7 +175,7 @@ member a (Node b map)
 --   @n@ from @a@.
 memberDistance :: Metric a => Int -> a -> BKTree a -> Bool
 memberDistance n a Empty = False
-memberDistance n a (Node b map)
+memberDistance n a (Node b _ map)
     | d <= n    = True
     | otherwise = any (memberDistance n a) (M.elems subMap)
     where d = distance a b
@@ -188,22 +188,24 @@ memberDistance n a (Node b map)
 --   the tree then only one occurrence will be deleted.
 delete :: Metric a => a -> BKTree a -> BKTree a
 delete a Empty = Empty
-delete a t@(Node b map) 
+delete a t@(Node b _ map) 
     | d == 0    = unions (M.elems map)
-    | otherwise = Node b (M.update (Just . delete a) d map)
+    | otherwise = Node b sz subtrees
     where d = distance a b
+          subtrees = M.update (Just . delete a) d map
+          sz = sum (L.map size (M.elems subtrees)) + 1
 
 -- | Returns all the elements of the tree
 elems :: BKTree a -> [a]
 elems Empty = []
-elems (Node a imap) = a : concatMap elems (M.elems imap)
+elems (Node a _ imap) = a : concatMap elems (M.elems imap)
 
 
 -- | @'elemsDistance' n a tree@ returns all the elements in @tree@ which are 
 --   at a 'distance' less than or equal to @n@ from the element @a@.
 elemsDistance :: Metric a => Int -> a -> BKTree a -> [a]
 elemsDistance n a Empty = []
-elemsDistance n a (Node b imap) 
+elemsDistance n a (Node b _ imap) 
     = (if d <= n then (b :) else id) $
       concatMap (elemsDistance n a) (M.elems subMap)
     where d = distance a b
@@ -215,7 +217,7 @@ elemsDistance n a (Node b imap)
 -- | Constructs a tree from a list
 fromList :: Metric a => [a] -> BKTree a
 fromList []     = Empty
-fromList (a:as) = Node a $
+fromList (a:as) = Node a (length (a:as)) $
                   M.fromAscList $
                   map recurse $
                   L.groupBy ((==) `on` fst) $
@@ -229,17 +231,18 @@ fromList (a:as) = Node a $
 unions :: Metric a => [BKTree a] -> BKTree a
 unions []  = Empty
 unions (Empty:ts) = unions ts
-unions (Node piv pmap:ts) = Node piv $
-                            M.fromAscList $
-                            map recurse $
-                            L.groupBy ((==) `on` fst) $
-                            L.sortBy (compare `on` fst) $
-                            (M.toList pmap ++) $
-                            concatMap mkDistance $
-                            ts
-    where mkDistance n@(Node a _) = [(distance piv a,n)]
-          mkDistance _            = []
-          recurse    bs@((k,_):_) = (k,unions (map snd bs))
+unions (Node piv sz pmap:ts) 
+    = Node piv (sz + sum (map size ts)) $
+      M.fromAscList $
+      map recurse $
+      L.groupBy ((==) `on` fst) $
+      L.sortBy (compare `on` fst) $
+      (M.toList pmap ++) $
+      concatMap mkDistance $
+      ts
+    where mkDistance n@(Node a _ _) = [(distance piv a,n)]
+          mkDistance _              = []
+          recurse    bs@((k,_):_)   = (k,unions (map snd bs))
 
 -- | Merges two trees
 union :: Metric a => BKTree a -> BKTree a -> BKTree a
@@ -249,10 +252,10 @@ union t1 t2 = unions [t1,t2]
 --   @a@ together with the distance. Returns @Nothing@ if the tree is empty.
 closest :: Metric a => a -> BKTree a -> Maybe (a,Int)
 closest a Empty = Nothing
-closest a tree@(Node b _) = Just (closeLoop a (b,distance a b) tree)
+closest a tree@(Node b _ _) = Just (closeLoop a (b,distance a b) tree)
 
 closeLoop a candidate Empty     = candidate
-closeLoop a candidate@(b,d) (Node x imap)
+closeLoop a candidate@(b,d) (Node x _ imap)
     = L.foldl' (closeLoop a) newCand (M.elems subMap)
     where newCand = if j >= d 
                     then candidate
@@ -320,8 +323,21 @@ prop_null xs = null (fromList xs) == Prelude.null (xs :: [Int])
 
 prop_sizeEmpty = size empty == 0
 
+prop_sizeFromList xs = size (fromList xs) == length (xs :: [Int])
+
 prop_sizeSucc n xs = size (insert (n::Int) tree) == size tree + 1
   where tree = fromList xs
+
+prop_sizeDelete n xs 
+    = size (delete (n::Int) tree) == 
+      size tree - (if n `member` tree then 1 else 0)
+  where tree = fromList xs
+
+prop_sizeUnion xs ys = size (union treeXs treeYs) == size treeXs + size treeYs
+  where (treeXs,treeYs) = (fromList xs, fromList (ys :: [Int]))
+
+prop_sizeUnions xss = size (unions trees) == sum (map size trees)
+  where trees = map fromList (xss :: [[Int]])
 
 prop_singleton n = elems (fromList [n]) == [n :: Int]
 
@@ -375,7 +391,11 @@ prop_insertDelete n xs =
 tests = [("empty",             quickCheck' prop_empty)
         ,("null",              quickCheck' prop_null)
         ,("size/empty",        quickCheck' prop_sizeEmpty)
-        ,("size succ",         quickCheck' prop_sizeSucc)
+        ,("size/fromList",     quickCheck' prop_sizeFromList)
+        ,("size/succ",         quickCheck' prop_sizeSucc)
+        ,("size/delete",       quickCheck' prop_sizeDelete)
+        ,("size/union",        quickCheck' prop_sizeUnion)
+        ,("size/unions",       quickCheck' prop_sizeUnions)
         ,("singleton",         quickCheck' prop_singleton)
         ,("insert",            quickCheck' prop_insert)
         ,("member",            quickCheck' prop_member)
