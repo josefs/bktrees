@@ -36,7 +36,7 @@ module Data.Set.BKTree
      -- Metric
     ,Metric(..)
      --
-    ,null,empty
+    ,null,size,empty
     ,fromList,singleton
     ,insert
     ,member,memberDistance
