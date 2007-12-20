@@ -310,7 +310,7 @@ prop_levenshteinLength xs =
     where allDifferent xs ys = all (==False) (zipWith (==) xs ys)
 
 -- Semantics of BKTrees. Just a boring list of integers
-sem tree = L.sort (elems tree)
+sem tree = L.sort (elems tree) :: [Int]
 
 -- For testing functions that transform trees
 trans f xs = sem (f (fromList xs))
@@ -321,28 +321,12 @@ prop_empty n = not (member (n::Int) empty)
 
 prop_null xs = null (fromList xs) == Prelude.null (xs :: [Int])
 
-prop_sizeEmpty = size empty == 0
-
-prop_sizeFromList xs = size (fromList xs) == length (xs :: [Int])
-
-prop_sizeSucc n xs = size (insert (n::Int) tree) == size tree + 1
-  where tree = fromList xs
-
-prop_sizeDelete n xs 
-    = size (delete (n::Int) tree) == 
-      size tree - (if n `member` tree then 1 else 0)
-  where tree = fromList xs
-
-prop_sizeUnion xs ys = size (union treeXs treeYs) == size treeXs + size treeYs
-  where (treeXs,treeYs) = (fromList xs, fromList (ys :: [Int]))
-
-prop_sizeUnions xss = size (unions trees) == sum (map size trees)
-  where trees = map fromList (xss :: [[Int]])
-
 prop_singleton n = elems (fromList [n]) == [n :: Int]
 
+prop_fromList xs = sem (fromList xs) == L.sort xs
+
 prop_insert n xs = 
-    trans (insert (n::Int)) xs == L.sort (n:xs)
+    trans (insert n) xs == L.sort (n:xs)
 
 prop_member n xs = member n (fromList xs) == L.elem (n::Int) xs
 
@@ -386,17 +370,30 @@ prop_closest n xs =
 prop_insertDelete n xs =
   trans (delete n . insert n) xs == L.sort (xs::[Int])
 
+prop_sizeEmpty = size empty == 0
+
+prop_sizeFromList xs = size (fromList xs) == length (xs :: [Int])
+
+prop_sizeSucc n xs = size (insert (n::Int) tree) == size tree + 1
+  where tree = fromList xs
+
+prop_sizeDelete n xs 
+    = size (delete (n::Int) tree) == 
+      size tree - (if n `member` tree then 1 else 0)
+  where tree = fromList xs
+
+prop_sizeUnion xs ys = size (union treeXs treeYs) == size treeXs + size treeYs
+  where (treeXs,treeYs) = (fromList xs, fromList (ys :: [Int]))
+
+prop_sizeUnions xss = size (unions trees) == sum (map size trees)
+  where trees = map fromList (xss :: [[Int]])
+
 -- All the tests
 
 tests = [("empty",             quickCheck' prop_empty)
         ,("null",              quickCheck' prop_null)
-        ,("size/empty",        quickCheck' prop_sizeEmpty)
-        ,("size/fromList",     quickCheck' prop_sizeFromList)
-        ,("size/succ",         quickCheck' prop_sizeSucc)
-        ,("size/delete",       quickCheck' prop_sizeDelete)
-        ,("size/union",        quickCheck' prop_sizeUnion)
-        ,("size/unions",       quickCheck' prop_sizeUnions)
         ,("singleton",         quickCheck' prop_singleton)
+        ,("fromList",          quickCheck' prop_fromList)
         ,("insert",            quickCheck' prop_insert)
         ,("member",            quickCheck' prop_member)
         ,("memberDistance",    quickCheck' prop_memberDistance)
@@ -406,6 +403,12 @@ tests = [("empty",             quickCheck' prop_empty)
         ,("unions",            quickCheck' prop_unions)
         ,("union",             quickCheck' prop_union)
         ,("closest",           quickCheck' prop_closest)
+        ,("size/empty",        quickCheck' prop_sizeEmpty)
+        ,("size/fromList",     quickCheck' prop_sizeFromList)
+        ,("size/succ",         quickCheck' prop_sizeSucc)
+        ,("size/delete",       quickCheck' prop_sizeDelete)
+        ,("size/union",        quickCheck' prop_sizeUnion)
+        ,("size/unions",       quickCheck' prop_sizeUnions)
         ,("insert/delete",     quickCheck' prop_insertDelete)
         ,("levenshtein",       quickCheck' prop_levenshtein)
         ,("levenshtein repeat",quickCheck' prop_levenshteinRepeat)
