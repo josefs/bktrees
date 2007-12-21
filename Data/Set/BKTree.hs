@@ -218,12 +218,6 @@ elemsDistance n a (Node b _ imap)
 fromList :: Metric a => [a] -> BKTree a
 fromList xs = constructTree (\a -> Just (a,[])) xs
 
--- | Merges several trees
-unions :: Metric a => [BKTree a] -> BKTree a
-unions xs = constructTree split xs
-  where split Empty = Nothing
-        split (Node a _ imap) = Just (a,M.elems imap)
-
 constructTree extract [] = Empty
 constructTree extract (a:as)
     = case extract a of
@@ -240,6 +234,10 @@ constructTree extract (a:as)
                          Just (a,_) -> [(distance piv a,m)]
                          Nothing    -> []
         recurse bs@((k,_):_) = (k, constructTree extract (map snd bs))
+
+-- | Merges several trees
+unions :: Metric a => [BKTree a] -> BKTree a
+unions xs = fromList $ concat $ map elems xs
 
 -- | Merges two trees
 union :: Metric a => BKTree a -> BKTree a -> BKTree a
@@ -385,6 +383,14 @@ prop_sizeUnion xs ys = size (union treeXs treeYs) == size treeXs + size treeYs
 prop_sizeUnions xss = size (unions trees) == sum (map size trees)
   where trees = map fromList (xss :: [[Int]])
 
+prop_unionsMember xss =
+    all (\x -> member x tree) (concat (xss :: [[Int]]))
+  where tree = unions (map fromList xss)
+
+prop_fromListMember xs =
+    all (\x -> member x tree) (xs :: [Int])
+  where tree = fromList xs
+
 -- All the tests
 
 tests = [("empty",             quickCheck' prop_empty)
@@ -407,6 +413,8 @@ tests = [("empty",             quickCheck' prop_empty)
         ,("size/union",        quickCheck' prop_sizeUnion)
         ,("size/unions",       quickCheck' prop_sizeUnions)
         ,("insert/delete",     quickCheck' prop_insertDelete)
+        ,("fromList/member",   quickCheck' prop_fromListMember)
+        ,("unions/member",     quickCheck' prop_unionsMember)
         ,("levenshtein",       quickCheck' prop_levenshtein)
         ,("levenshtein repeat",quickCheck' prop_levenshteinRepeat)
         ,("levenshtein length",quickCheck' prop_levenshteinLength)
