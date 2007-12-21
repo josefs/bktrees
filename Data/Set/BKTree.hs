@@ -200,7 +200,6 @@ elems :: BKTree a -> [a]
 elems Empty = []
 elems (Node a _ imap) = a : concatMap elems (M.elems imap)
 
-
 -- | @'elemsDistance' n a tree@ returns all the elements in @tree@ which are 
 --   at a 'distance' less than or equal to @n@ from the element @a@.
 elemsDistance :: Metric a => Int -> a -> BKTree a -> [a]
@@ -310,6 +309,13 @@ sem tree = L.sort (elems tree) :: [Int]
 -- For testing functions that transform trees
 trans f xs = sem (f (fromList xs))
 
+invariant t = inv [] t
+
+inv dict Empty = True
+inv dict (Node a _ imap) 
+    = all (\ (d,b) -> distance a b == d) dict &&
+      all (\ (d,t) -> inv ((d,a):dict) t) (M.toList imap)
+
 -- Tests for individual functions
 
 prop_empty n = not (member (n::Int) empty)
@@ -320,8 +326,13 @@ prop_singleton n = elems (fromList [n]) == [n :: Int]
 
 prop_fromList xs = sem (fromList xs) == L.sort xs
 
+prop_fromListInv xs = invariant (fromList (xs :: [Int]))
+
 prop_insert n xs = 
     trans (insert n) xs == L.sort (n:xs)
+
+prop_insertInv n xs =
+    invariant (insert n (fromList (xs :: [Int])))
 
 prop_member n xs = member n (fromList xs) == L.elem (n::Int) xs
 
@@ -339,6 +350,9 @@ prop_delete n xs =
        removeFirst (a:as) | a == n    = as
                           | otherwise = a : removeFirst as
 
+prop_deleteInv n xs =
+    invariant (delete n (fromList (xs :: [Int])))
+
 prop_elems xs = L.sort (elems (fromList xs)) == L.sort (xs::[Int])
 
 prop_elemsDistance dist n xs = 
@@ -350,9 +364,15 @@ prop_unions xss =
     sem (unions (map fromList xss)) == 
     L.sort (concat (xss::[[Int]]))
 
+prop_unionsInv xss =
+    invariant (unions (map fromList (xss :: [[Int]])))
+
 prop_union xs ys =
     sem (union (fromList xs) (fromList ys)) ==
     L.sort (xs ++ (ys::[Int]))
+
+prop_unionInv xs ys =
+    invariant (union (fromList (xs :: [Int])) (fromList (ys :: [Int])))
 
 prop_closest n xs =
   case (closest n (fromList xs),xs) of
@@ -397,14 +417,19 @@ tests = [("empty",             quickCheck' prop_empty)
         ,("null",              quickCheck' prop_null)
         ,("singleton",         quickCheck' prop_singleton)
         ,("fromList",          quickCheck' prop_fromList)
+        ,("fromList inv",      quickCheck' prop_fromListInv)
         ,("insert",            quickCheck' prop_insert)
+        ,("insert inv",        quickCheck' prop_insertInv)
         ,("member",            quickCheck' prop_member)
         ,("memberDistance",    quickCheck' prop_memberDistance)
         ,("delete",            quickCheck' prop_delete)
+        ,("delete inv",        quickCheck' prop_deleteInv)
         ,("elems",             quickCheck' prop_elems)
         ,("elemsDistance",     quickCheck' prop_elemsDistance)
         ,("unions",            quickCheck' prop_unions)
+        ,("unions inv",        quickCheck' prop_unionsInv)
         ,("union",             quickCheck' prop_union)
+        ,("union inv",         quickCheck' prop_unionInv)
         ,("closest",           quickCheck' prop_closest)
         ,("size/empty",        quickCheck' prop_sizeEmpty)
         ,("size/fromList",     quickCheck' prop_sizeFromList)
