@@ -268,41 +268,40 @@ on rel f x y = rel (f x) (f y)
 -- Testing
 -- N.B. This code requires QuickCheck 2.0
 
+{- Testing using algebraic specification. The idea is that we have this
+naive inefficient distance function. But instead of comparing it to our actual
+implementation we take each clause in the definition and make it into an 
+equation. We also change each occurrence of the name naive to a call to the
+distance function.
 
--- We use a more standard implementation of the levenshtein edit distance
--- to check the hirschberg algorithm
-levenshtein :: Eq a => [a] -> [a] -> Int
-levenshtein xs ys = let
-	lxs = length xs
-	lys = length ys
-	d x y cx cy = minimum
-		[dist!(x-1,y-1) + (if cx == cy then 0 else 1)
-		,dist!(x-1,y)   + 1
-		,dist!(x,y-1)   + 1
-		]
-	dist :: Array (Int,Int) Int
-	dist = array ((0,0),(lxs,lys))
-		(  [((0,0),0)]
-		++ [((x,0),x) | x <- [1..lxs]]
-		++ [((0,y),y) | y <- [1..lys]]
-		++ [ ((x,y),d x y cx cy)
-			| (x,cx) <- zip [1..] xs
-			, (y,cy) <- zip [1..] ys])
-	in dist!(lxs,lys)
+naive []     ys     = length ys
+naive xs     []     = length xs
+naive (x:xs) (y:ys) | x == y = naive xs ys
+naive (x:xs) (y:ys) = 1 + minimum [naive (x:xs) ys
+                                  ,naive (x:xs) (x:ys)
+                                  ,naive xs (y:ys)]
 
--- These properties are all rather weaker than I would like. 
--- Think of something better.
-prop_levenshtein xs ys = distance xs ys == levenshtein xs (ys :: [Int])
+For example, the third clause becomes:
+distance (x:xs) (x:ys) == distance xs ys
 
-prop_levenshteinRepeat (NonZero (NonNegative n)) (NonZero (NonNegative m)) = 
-    distance (replicate n (0::Int)) (replicate m 0) == distance n m
+That way we can construct a quickCheck property from it. So, one property for
+each equation in the naive algorithm. Pretty sweet! Credits go to Koen.
+-}
 
-prop_levenshteinLength xs =
-    forAll (vectorOf (length xs) arbitrary) $ \ys -> 
-        distance xs ys == length xs && allDifferent xs ys
-    ||  distance xs ys <  length (xs :: [Int])
-    where allDifferent xs ys = all (==False) (zipWith (==) xs ys)
+-- Way too inefficient!
+-- prop_naive xs ys = distance xs ys == naive xs (ys :: [Int])
 
+prop_naiveEmpty xs = 
+    distance [] xs == length xs &&
+    distance xs [] == length (xs::[Int])
+prop_naiveCons x xs ys = distance (x:xs) (x:ys) == distance xs (ys::[Int])
+prop_naiveDiff x y xs ys = x /= y ==>
+    distance (x:xs) (y:ys) ==
+    1 + minimum [distance (x:xs) (ys :: [Int])
+                ,distance (x:xs) (x:ys)
+                ,distance xs (y:ys)]
+
+-- ----------------------------------------------------
 -- Semantics of BKTrees. Just a boring list of integers
 sem tree = L.sort (elems tree) :: [Int]
 
@@ -440,9 +439,9 @@ tests = [("empty",             quickCheck' prop_empty)
         ,("insert/delete",     quickCheck' prop_insertDelete)
         ,("fromList/member",   quickCheck' prop_fromListMember)
         ,("unions/member",     quickCheck' prop_unionsMember)
-        ,("levenshtein",       quickCheck' prop_levenshtein)
-        ,("levenshtein repeat",quickCheck' prop_levenshteinRepeat)
-        ,("levenshtein length",quickCheck' prop_levenshteinLength)
+        ,("naiveEmpty",        quickCheck' prop_naiveEmpty)
+        ,("naiveCons",         quickCheck' prop_naiveCons)
+        ,("naiveDiff",         quickCheck' prop_naiveDiff)
         ]
 
 runTests = mapM_ runTest tests
