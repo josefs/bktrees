@@ -215,24 +215,7 @@ elemsDistance n a (Node b _ imap)
 
 -- | Constructs a tree from a list
 fromList :: Metric a => [a] -> BKTree a
-fromList xs = constructTree (\a -> Just (a,[])) xs
-
-constructTree extract [] = Empty
-constructTree extract (a:as)
-    = case extract a of
-        Nothing -> constructTree extract as
-        Just (piv,rest) -> 
-            (\imap -> Node piv (1 + sum (map size (M.elems imap))) imap) $
-            M.fromAscList $
-            map recurse $
-            L.groupBy ((==) `on` fst) $
-            L.sortBy (compare `on` fst) $
-            concatMap (mkDist piv) $
-            as ++ rest
-  where mkDist piv m = case extract m of
-                         Just (a,_) -> [(distance piv a,m)]
-                         Nothing    -> []
-        recurse bs@((k,_):_) = (k, constructTree extract (map snd bs))
+fromList xs = L.foldl' (flip insert) empty xs
 
 -- | Merges several trees
 unions :: Metric a => [BKTree a] -> BKTree a
