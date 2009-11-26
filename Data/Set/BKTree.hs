@@ -232,7 +232,7 @@ closest a Empty = Nothing
 closest a tree@(Node b _ _) = Just (closeLoop a (b,distance a b) tree)
 
 closeLoop a candidate Empty     = candidate
-closeLoop a candidate@(b,d) (Node x _ imap)
+closeLoop a candidate@(_,d) (Node x _ imap)
     = L.foldl' (closeLoop a) newCand (M.elems subMap)
     where newCand = if j >= d 
                     then candidate
