@@ -28,4 +28,3 @@ library
 
   exposed-modules:	Data.Set.BKTree
   extensions:	CPP
-  ghc-options:	-O
