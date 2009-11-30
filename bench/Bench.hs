@@ -6,6 +6,10 @@ http://www.facebook.com/careers/puzzles.php?puzzle_id=17
 
 Thanks to Wei Hu (weihu@cs.virginia.edu) for alerting me about the
 slowness of my previous implementation.
+
+I also have another implementation of bktrees in the file BKTree which
+I can use to benchmark against.
+
 -}
 
 import Data.Set.BKTree
