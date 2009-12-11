@@ -14,5 +14,8 @@ I can use to benchmark against.
 
 import Data.Set.BKTree
 
+import BKTree
+
 main = do file <- readFile "twl06.txt"
           print (size (fromList (lines file)))
+
