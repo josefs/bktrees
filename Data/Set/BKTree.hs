@@ -49,6 +49,8 @@ module Data.Set.BKTree
 #endif
     )where
 
+import Data.Set.BKTree.Internal
+
 import qualified Data.IntMap as M
 import qualified Data.List as L hiding (null)
 import Prelude hiding (null)
@@ -124,14 +126,6 @@ instance Eq a => Metric [a] where
 -- --------
 -- BKTrees
 -- --------
-
--- | The type of Burkhard-Keller trees.
-data BKTree a = Node a !Int (M.IntMap (BKTree a))
-              | Empty
-#ifdef DEBUG
-                deriving Show
-#endif
-
 
 -- | Test if the tree is empty.
 null :: BKTree a -> Bool
