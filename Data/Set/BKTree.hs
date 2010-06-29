@@ -1,6 +1,6 @@
 {- | 
    Module      : Data.Set.BKTree
-   Copyright   : (c) Josef Svenningsson 2007
+   Copyright   : (c) Josef Svenningsson 2007-2010
                  (c) Henning Günter     2007
    License     : BSD-style
    Maintainer  : josef.svenningsson@gmail.com
