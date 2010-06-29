@@ -27,5 +27,5 @@ library
     build-depends: base < 3
 
   exposed-modules:	Data.Set.BKTree
-  			Data.Set.BKTree.Internal
+                        Data.Set.BKTree.Internal
   extensions:	CPP
