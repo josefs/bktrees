@@ -12,7 +12,7 @@ description:
 		approximate member search, allowing you to search for 
 		elements that are of a certain distance from the element 
 		you are searching for.
-cabal-version: >=1.2
+cabal-version: >=1.6
 extra-source-files: 	test/Test.hs
 extra-source-files:	README
 build-type:	Simple
