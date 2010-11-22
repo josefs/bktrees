@@ -434,8 +434,8 @@ runTests = mapM_ runTest tests
             = do printf "%-25s :" s
                  result <- quickCheckResult prop
                  case result of
-                   Success _   -> return ()
-                   GaveUp  _ _ -> return ()
-                   _           -> exitFailure
+                   Success _ _ _ -> return ()
+                   GaveUp  _ _ _ -> return ()
+                   _             -> exitFailure
                    
 #endif 
