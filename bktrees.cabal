@@ -17,6 +17,10 @@ extra-source-files: 	test/Test.hs
 extra-source-files:	README
 build-type:	Simple
 
+source-repository head
+  type:     darcs
+  location: http://patch-tag.com/r/josef/bktrees
+
 flag splitBase
   description: Choose the new smaller, split-up base package.
 
